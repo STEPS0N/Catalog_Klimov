@@ -2,4 +2,9 @@
 <resources>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
+
+    <color name="category_active">#2074F2</color>
+    <color name="category_disabled">#F7F7FA</color>
+    <color name="caption">#939396</color>
+    <color name="icon">#F6F8F9</color>
 </resources>
