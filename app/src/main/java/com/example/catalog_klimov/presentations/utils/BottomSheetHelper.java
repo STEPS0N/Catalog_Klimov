@@ -7,7 +7,7 @@ import android.view.View;
 import android.widget.ImageView;
 import android.widget.TextView;
 
-import com.example.catalog_klimov.MainActivity;
+import com.example.catalog_klimov.presentations.MainActivity;
 import com.example.catalog_klimov.R;
 import com.example.network.domains.common.Settings;
 import com.example.network.domains.models.Product;
