@@ -24,3 +24,5 @@ dependencyResolutionManagement {
 
 rootProject.name = "Catalog_Klimov"
 include ':app'
+include ':network'
+include ':UIComponents'
