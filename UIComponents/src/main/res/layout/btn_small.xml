@@ -4,7 +4,7 @@
     android:layout_height="wrap_content">
 
     <androidx.appcompat.widget.AppCompatButton
-        android:id="@+id/btn_small"
+        android:id="@+id/btn"
         android:fontFamily="@font/roboto"
         android:textFontWeight="600"
         android:textSize="14sp"

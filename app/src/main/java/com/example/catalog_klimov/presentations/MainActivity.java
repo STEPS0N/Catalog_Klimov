@@ -1,9 +1,12 @@
 package com.example.catalog_klimov.presentations;
 
 import android.os.Bundle;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
@@ -33,11 +36,15 @@ import com.google.gson.reflect.TypeToken;
 
 import java.util.ArrayList;
 
+import kotlin.text.UStringsKt;
+
 public class MainActivity extends AppCompatActivity {
     RecyclerView llCategory;
     LinearLayout llProducts;
+    EditText etSearch;
+    private ArrayList<Product> allProducts;
     ProgressDialogHelper progressDialogHelper;
-    String Token = "";
+    String Token = "7c8fdde2-cc31-44bc-9643-582434e35925";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -47,12 +54,33 @@ public class MainActivity extends AppCompatActivity {
 
         llCategory = findViewById(R.id.llCategory);
         llProducts = findViewById(R.id.llProducts);
+        etSearch = findViewById(R.id.etSearch);
 
         CategoryAdapter categoryAdapter = new CategoryAdapter(this, CategoryContext.allCategory());
         llCategory.setAdapter(categoryAdapter);
 
         progressDialogHelper = new ProgressDialogHelper(this);
         RequestProductGet();
+
+        etSearch.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void afterTextChanged(Editable s) {
+
+            }
+
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+
+            }
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+                String query = s.toString();
+                Search(query);
+            }
+        });
+
+
     }
 
     public void RequestProductGet() {
@@ -132,7 +160,56 @@ public class MainActivity extends AppCompatActivity {
         else btnAdd.init("Добавить", BthCustom.TypeButton.PRIMARY);
     }
 
+    public void Search(String text) {
+        llProducts.removeAllViews();
+
+        for (Product product : allProducts) {
+            if (product.name.toLowerCase().contains(text.toLowerCase())){
+                Fill(product);
+            }
+        }
+    }
+
+    public void Fill(Product product){
+        View item = LayoutInflater.from(this).inflate(R.layout.item_product, llProducts, false);
+
+        TextView tvName = item.findViewById(R.id.tvName);
+        TextView tvCategory = item.findViewById(R.id.tvCategory);
+        TextView tvPrice = item.findViewById(R.id.tvPrice);
+        BtnSmall btnAdd = item.findViewById(R.id.btnAdd);
+
+        String[] NameCategory = new String[] { "Мужское", "Женское", "Unisex" };
+
+        tvName.setText(product.name);
+        if (product.gender >= 0 && product.gender <= 2)
+            tvCategory.setText(NameCategory[product.gender]);
+        else
+            tvCategory.setText("Неизвестно");
+        tvPrice.setText(product.price + "₽");
+
+        if (btnAdd.Btn != null) {
+            ChangeBtnState(btnAdd, false);
+        }
+        btnAdd.init("Добавить", BtnSmall.TypeButton.PRIMARY);
+
+        item.setOnClickListener(v -> {
+            BottomSheetHelper.Create(this, this, product, btnAdd, progressDialogHelper);
+        });
+
+        btnAdd.Btn.setOnClickListener(v -> {
+            if (btnAdd.Btn.getText().toString().equals("Добавить"))
+                BasketCreate(product, btnAdd);
+            else
+                BasketUpdate(product, btnAdd);
+        });
+
+        llProducts.addView(item);
+    }
+
     public void CreateProduct(ArrayList<Product> products) {
+        this.allProducts = products;
+        llProducts.removeAllViews();
+
         String[] NameCategory = new String[] { "Мужское", "Женское", "Unisex" };
 
         for (Product product : products) {
@@ -145,7 +222,6 @@ public class MainActivity extends AppCompatActivity {
             BtnSmall btnAdd = item.findViewById(R.id.btnAdd);
 
             tvName.setText(product.name);
-            ChangeBtnState(btnAdd, false);
 
             if (product.gender >= 0 && product.gender <= 2)
                 tvCategory.setText(NameCategory[product.gender]);
@@ -154,13 +230,21 @@ public class MainActivity extends AppCompatActivity {
 
             tvPrice.setText(product.price + "₽");
 
+            if (btnAdd.Btn != null) {
+                ChangeBtnState(btnAdd, false);
+            }
+
+            btnAdd.init("Добавить", BtnSmall.TypeButton.PRIMARY);
+
             item.setOnClickListener(v -> {
                 BottomSheetHelper.Create(this, this, product, btnAdd, progressDialogHelper);
             });
 
             btnAdd.Btn.setOnClickListener(v -> {
-                if (btnAdd.Btn.getText() == "Добавить") BasketCreate(product, btnAdd);
-                else BasketUpdate(product, btnAdd);
+                if (btnAdd.Btn.getText() == "Добавить")
+                    BasketCreate(product, btnAdd);
+                else
+                    BasketUpdate(product, btnAdd);
             });
 
             llProducts.addView(item);

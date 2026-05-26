@@ -12,14 +12,17 @@ import com.example.uicomponents.R;
 public class BtnSmall extends BthCustom{
     public BtnSmall(@NonNull Context context) {
         super(context);
+        init(R.layout.btn_small);
     }
 
     public BtnSmall(@NonNull Context context, @Nullable AttributeSet attrs) {
         super(context, attrs);
+        init(R.layout.btn_small);
     }
 
     public BtnSmall(@NonNull Context context, @Nullable AttributeSet attrs, int defStyleAttr) {
         super(context, attrs, defStyleAttr);
+        init(R.layout.btn_small);
     }
 
     @Override
