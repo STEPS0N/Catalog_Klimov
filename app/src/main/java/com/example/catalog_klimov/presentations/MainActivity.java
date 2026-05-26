@@ -19,6 +19,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.catalog_klimov.R;
 import com.example.catalog_klimov.datas.CategoryContext;
+import com.example.catalog_klimov.domains.models.Сategory;
 import com.example.catalog_klimov.presentations.adapters.CategoryAdapter;
 import com.example.catalog_klimov.presentations.utils.BottomSheetHelper;
 import com.example.catalog_klimov.presentations.utils.ProgressDialogHelper;
@@ -43,8 +44,11 @@ public class MainActivity extends AppCompatActivity {
     LinearLayout llProducts;
     EditText etSearch;
     private ArrayList<Product> allProducts;
+    private ArrayList<Product> filteredProducts;
     ProgressDialogHelper progressDialogHelper;
-    String Token = "7c8fdde2-cc31-44bc-9643-582434e35925";
+    String Token = "16594ef1-1c9d-4ebe-bd9b-5a3c3a3bba9b";
+    private int currentGenderFilter = -1;
+    private String currentSearchQuery = "";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -56,7 +60,14 @@ public class MainActivity extends AppCompatActivity {
         llProducts = findViewById(R.id.llProducts);
         etSearch = findViewById(R.id.etSearch);
 
-        CategoryAdapter categoryAdapter = new CategoryAdapter(this, CategoryContext.allCategory());
+        ArrayList<Сategory> allCategories = CategoryContext.allCategory();
+        CategoryAdapter categoryAdapter = new CategoryAdapter(this, allCategories, new CategoryAdapter.OnCategoryClickListener() {
+            @Override
+            public void onCategoryClick(int position, Сategory category) {
+                currentGenderFilter = category.id;
+                applyFilters();
+            }
+        });
         llCategory.setAdapter(categoryAdapter);
 
         progressDialogHelper = new ProgressDialogHelper(this);
@@ -64,23 +75,42 @@ public class MainActivity extends AppCompatActivity {
 
         etSearch.addTextChangedListener(new TextWatcher() {
             @Override
-            public void afterTextChanged(Editable s) {
-
-            }
+            public void afterTextChanged(Editable s) {}
 
             @Override
-            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
-
-            }
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
 
             @Override
             public void onTextChanged(CharSequence s, int start, int before, int count) {
-                String query = s.toString();
-                Search(query);
+                currentSearchQuery = s.toString();
+                applyFilters();
             }
         });
+    }
 
+    private void applyFilters() {
+        if (allProducts == null) return;
 
+        ArrayList<Product> filteredProducts = new ArrayList<>();
+
+        for (Product product : allProducts) {
+            boolean matchesGender = true;
+            boolean matchesSearch = true;
+
+            if (currentGenderFilter != -1) {
+                matchesGender = (product.gender == currentGenderFilter);
+            }
+
+            if (!currentSearchQuery.isEmpty()) {
+                matchesSearch = product.name.toLowerCase().contains(currentSearchQuery.toLowerCase());
+            }
+
+            if (matchesGender && matchesSearch) {
+                filteredProducts.add(product);
+            }
+        }
+
+        CreateProduct(filteredProducts);
     }
 
     public void RequestProductGet() {
@@ -156,54 +186,10 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void ChangeBtnState(BthCustom btnAdd, boolean isBasket) {
-        if (isBasket) btnAdd.init("Убрать", BthCustom.TypeButton.SECONDARY);
-        else btnAdd.init("Добавить", BthCustom.TypeButton.PRIMARY);
-    }
-
-    public void Search(String text) {
-        llProducts.removeAllViews();
-
-        for (Product product : allProducts) {
-            if (product.name.toLowerCase().contains(text.toLowerCase())){
-                Fill(product);
-            }
-        }
-    }
-
-    public void Fill(Product product){
-        View item = LayoutInflater.from(this).inflate(R.layout.item_product, llProducts, false);
-
-        TextView tvName = item.findViewById(R.id.tvName);
-        TextView tvCategory = item.findViewById(R.id.tvCategory);
-        TextView tvPrice = item.findViewById(R.id.tvPrice);
-        BtnSmall btnAdd = item.findViewById(R.id.btnAdd);
-
-        String[] NameCategory = new String[] { "Мужское", "Женское", "Unisex" };
-
-        tvName.setText(product.name);
-        if (product.gender >= 0 && product.gender <= 2)
-            tvCategory.setText(NameCategory[product.gender]);
+        if (isBasket)
+            btnAdd.init("Убрать", BthCustom.TypeButton.SECONDARY);
         else
-            tvCategory.setText("Неизвестно");
-        tvPrice.setText(product.price + "₽");
-
-        if (btnAdd.Btn != null) {
-            ChangeBtnState(btnAdd, false);
-        }
-        btnAdd.init("Добавить", BtnSmall.TypeButton.PRIMARY);
-
-        item.setOnClickListener(v -> {
-            BottomSheetHelper.Create(this, this, product, btnAdd, progressDialogHelper);
-        });
-
-        btnAdd.Btn.setOnClickListener(v -> {
-            if (btnAdd.Btn.getText().toString().equals("Добавить"))
-                BasketCreate(product, btnAdd);
-            else
-                BasketUpdate(product, btnAdd);
-        });
-
-        llProducts.addView(item);
+            btnAdd.init("Добавить", BthCustom.TypeButton.PRIMARY);
     }
 
     public void CreateProduct(ArrayList<Product> products) {
@@ -222,6 +208,7 @@ public class MainActivity extends AppCompatActivity {
             BtnSmall btnAdd = item.findViewById(R.id.btnAdd);
 
             tvName.setText(product.name);
+            ChangeBtnState(btnAdd, false);
 
             if (product.gender >= 0 && product.gender <= 2)
                 tvCategory.setText(NameCategory[product.gender]);
@@ -229,12 +216,6 @@ public class MainActivity extends AppCompatActivity {
                 tvCategory.setText("Неизвестно");
 
             tvPrice.setText(product.price + "₽");
-
-            if (btnAdd.Btn != null) {
-                ChangeBtnState(btnAdd, false);
-            }
-
-            btnAdd.init("Добавить", BtnSmall.TypeButton.PRIMARY);
 
             item.setOnClickListener(v -> {
                 BottomSheetHelper.Create(this, this, product, btnAdd, progressDialogHelper);
@@ -246,6 +227,9 @@ public class MainActivity extends AppCompatActivity {
                 else
                     BasketUpdate(product, btnAdd);
             });
+
+            String test = (String) btnAdd.Btn.getText();
+            Log.d("Button", test);
 
             llProducts.addView(item);
         }
