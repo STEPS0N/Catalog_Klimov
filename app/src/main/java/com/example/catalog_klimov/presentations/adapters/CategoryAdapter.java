@@ -21,11 +21,17 @@ public class CategoryAdapter extends RecyclerView.Adapter<CategoryAdapter.ViewHo
 
     Context context;
     ArrayList<Сategory> categories;
+    ionClickInterface clickListener;
     int selectedPosition = 0;
 
-    public CategoryAdapter(Context context, ArrayList<Сategory> categories) {
+    public interface ionClickInterface {
+        void setClick(View view, int position);
+    }
+
+    public CategoryAdapter(Context context, ArrayList<Сategory> categories, ionClickInterface clickListener) {
         this.context = context;
         this.categories = categories;
+        this.clickListener = clickListener;
     }
 
     @NonNull
@@ -55,6 +61,10 @@ public class CategoryAdapter extends RecyclerView.Adapter<CategoryAdapter.ViewHo
             notifyItemChanged(selectedPosition);
             selectedPosition = position;
             notifyItemChanged(position);
+
+            if (clickListener != null) {
+                clickListener.setClick(v, position);
+            }
         });
     }
 

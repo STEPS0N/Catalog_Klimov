@@ -31,24 +31,31 @@ import com.example.network.domains.models.Basket;
 import com.example.network.domains.models.Product;
 import com.example.uicomponents.button.BthCustom;
 import com.example.uicomponents.button.BtnSmall;
-import com.google.android.material.bottomsheet.BottomSheetDialog;
 import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
 
 import java.util.ArrayList;
 
-import kotlin.text.UStringsKt;
-
 public class MainActivity extends AppCompatActivity {
     RecyclerView llCategory;
     LinearLayout llProducts;
     EditText etSearch;
-    private ArrayList<Product> allProducts;
-    private ArrayList<Product> filteredProducts;
+    ArrayList<Product> Products = new ArrayList<>();
+    ArrayList<Сategory> Categorys = new ArrayList<>();
     ProgressDialogHelper progressDialogHelper;
-    String Token = "16594ef1-1c9d-4ebe-bd9b-5a3c3a3bba9b";
-    private int currentGenderFilter = -1;
-    private String currentSearchQuery = "";
+    String Token = "148e4252-01c0-4be5-a8fa-fe83d64f8d1d";
+    CategoryAdapter categoryAdapter;
+    int currentGender = -1;
+
+    CategoryAdapter.ionClickInterface CategoryClick = new CategoryAdapter.ionClickInterface() {
+        @Override
+        public void setClick(View view, int position) {
+            Сategory selectCategory = Categorys.get(position);
+            currentGender = selectCategory.id;
+            filterByGender(currentGender);
+            categoryAdapter.notifyDataSetChanged();
+        }
+    };
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -59,15 +66,16 @@ public class MainActivity extends AppCompatActivity {
         llCategory = findViewById(R.id.llCategory);
         llProducts = findViewById(R.id.llProducts);
         etSearch = findViewById(R.id.etSearch);
+        Categorys = CategoryContext.allCategory();
 
-        ArrayList<Сategory> allCategories = CategoryContext.allCategory();
-        CategoryAdapter categoryAdapter = new CategoryAdapter(this, allCategories, new CategoryAdapter.OnCategoryClickListener() {
-            @Override
-            public void onCategoryClick(int position, Сategory category) {
-                currentGenderFilter = category.id;
-                applyFilters();
-            }
-        });
+        Bundle arguments = getIntent().getExtras();
+        Integer IdCategory = -1;
+        if (arguments != null && arguments.containsKey("Category")) {
+            IdCategory = Integer.valueOf(arguments.get("Category").toString());
+            currentGender = IdCategory;
+        }
+
+        categoryAdapter = new CategoryAdapter(this, Categorys, CategoryClick);
         llCategory.setAdapter(categoryAdapter);
 
         progressDialogHelper = new ProgressDialogHelper(this);
@@ -82,35 +90,22 @@ public class MainActivity extends AppCompatActivity {
 
             @Override
             public void onTextChanged(CharSequence s, int start, int before, int count) {
-                currentSearchQuery = s.toString();
-                applyFilters();
+                Search(s.toString());
             }
         });
     }
 
-    private void applyFilters() {
-        if (allProducts == null) return;
-
-        ArrayList<Product> filteredProducts = new ArrayList<>();
-
-        for (Product product : allProducts) {
-            boolean matchesGender = true;
-            boolean matchesSearch = true;
-
-            if (currentGenderFilter != -1) {
-                matchesGender = (product.gender == currentGenderFilter);
-            }
-
-            if (!currentSearchQuery.isEmpty()) {
-                matchesSearch = product.name.toLowerCase().contains(currentSearchQuery.toLowerCase());
-            }
-
-            if (matchesGender && matchesSearch) {
-                filteredProducts.add(product);
+    private void filterByGender(int genderId) {
+        ArrayList<Product> filtered = new ArrayList<>();
+        for (Product p : Products) {
+            if (genderId == -1 || p.gender == genderId) {
+                filtered.add(p);
             }
         }
-
-        CreateProduct(filteredProducts);
+        llProducts.removeAllViews();
+        for (Product product : filtered) {
+            Fill(product);
+        }
     }
 
     public void RequestProductGet() {
@@ -192,46 +187,87 @@ public class MainActivity extends AppCompatActivity {
             btnAdd.init("Добавить", BthCustom.TypeButton.PRIMARY);
     }
 
-    public void CreateProduct(ArrayList<Product> products) {
-        this.allProducts = products;
+    public void Search(String text) {
         llProducts.removeAllViews();
+
+        for (Product product : Products) {
+            if (product.name.toLowerCase().contains(text.toLowerCase())){
+                Fill(product);
+            }
+        }
+    }
+
+    public void Fill(Product product){
+        View item = LayoutInflater.from(this).inflate(R.layout.item_product, llProducts, false);
+
+        TextView tvName = item.findViewById(R.id.tvName);
+        TextView tvCategory = item.findViewById(R.id.tvCategory);
+        TextView tvPrice = item.findViewById(R.id.tvPrice);
+        BtnSmall btnAdd = item.findViewById(R.id.btnAdd);
 
         String[] NameCategory = new String[] { "Мужское", "Женское", "Unisex" };
 
-        for (Product product : products) {
-            View item = LayoutInflater.from(this).inflate(R.layout.item_product,
-                    llProducts, false);
+        tvName.setText(product.name);
+        if (product.gender >= 0 && product.gender <= 2)
+            tvCategory.setText(NameCategory[product.gender]);
+        else
+            tvCategory.setText("Неизвестно");
+        tvPrice.setText(product.price + "₽");
 
-            TextView tvName = item.findViewById(R.id.tvName);
-            TextView tvCategory = item.findViewById(R.id.tvCategory);
-            TextView tvPrice = item.findViewById(R.id.tvPrice);
-            BtnSmall btnAdd = item.findViewById(R.id.btnAdd);
+        btnAdd.init("Добавить", BtnSmall.TypeButton.PRIMARY);
 
-            tvName.setText(product.name);
-            ChangeBtnState(btnAdd, false);
+        final Product currentProduct = product;
+        final BtnSmall currentBtn = btnAdd;
 
-            if (product.gender >= 0 && product.gender <= 2)
-                tvCategory.setText(NameCategory[product.gender]);
+        btnAdd.Btn.setOnClickListener(v -> {
+            if (currentBtn.Btn.getText() == "Добавить")
+                BasketCreate(currentProduct, currentBtn);
             else
-                tvCategory.setText("Неизвестно");
+                BasketUpdate(currentProduct, currentBtn);
+        });
 
-            tvPrice.setText(product.price + "₽");
+        item.setOnClickListener(v -> {
+            BottomSheetHelper.Create(this, this, product, btnAdd, progressDialogHelper);
+        });
 
-            item.setOnClickListener(v -> {
-                BottomSheetHelper.Create(this, this, product, btnAdd, progressDialogHelper);
-            });
+        llProducts.addView(item);
+    }
 
-            btnAdd.Btn.setOnClickListener(v -> {
-                if (btnAdd.Btn.getText() == "Добавить")
-                    BasketCreate(product, btnAdd);
+    public void CreateProduct(ArrayList<Product> products) {
+        this.Products = products;
+
+        if (currentGender != -1) {
+            filterByGender(currentGender);
+        } else {
+            llProducts.removeAllViews();
+            String[] NameCategory = new String[] { "Мужское", "Женское", "Unisex" };
+            for (Product product : products) {
+                View item = LayoutInflater.from(this).inflate(R.layout.item_product, llProducts, false);
+                TextView tvName = item.findViewById(R.id.tvName);
+                TextView tvCategory = item.findViewById(R.id.tvCategory);
+                TextView tvPrice = item.findViewById(R.id.tvPrice);
+                BtnSmall btnAdd = item.findViewById(R.id.btnAdd);
+
+                tvName.setText(product.name);
+                ChangeBtnState(btnAdd, false);
+                if (product.gender >= 0 && product.gender <= 2)
+                    tvCategory.setText(NameCategory[product.gender]);
                 else
-                    BasketUpdate(product, btnAdd);
-            });
+                    tvCategory.setText("Неизвестно");
+                tvPrice.setText(product.price + "₽");
 
-            String test = (String) btnAdd.Btn.getText();
-            Log.d("Button", test);
+                item.setOnClickListener(v -> {
+                    BottomSheetHelper.Create(this, this, product, btnAdd, progressDialogHelper);
+                });
 
-            llProducts.addView(item);
+                btnAdd.Btn.setOnClickListener(v -> {
+                    if (btnAdd.Btn.getText().toString().equals("Добавить"))
+                        BasketCreate(product, btnAdd);
+                    else
+                        BasketUpdate(product, btnAdd);
+                });
+                llProducts.addView(item);
+            }
         }
         progressDialogHelper.progressDialog.hide();
     }
