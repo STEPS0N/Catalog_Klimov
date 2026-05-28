@@ -8,11 +8,9 @@ import org.jsoup.Connection;
 import org.jsoup.Jsoup;
 
 public class StockGet extends MyAsyncTask {
-    String token;
 
-    public StockGet(String token, MyResponseCallback callback) {
+    public StockGet(MyResponseCallback callback) {
         super(callback);
-        this.token = token;
     }
 
     @Override
@@ -23,7 +21,6 @@ public class StockGet extends MyAsyncTask {
                     .ignoreHttpErrors(true)
                     .method(Connection.Method.GET)
                     .header("Content-type", "application/json")
-                    .header("token", token)
                     .execute();
             return response.statusCode() == 200 ?
                     response.body() :

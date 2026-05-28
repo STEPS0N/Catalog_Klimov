@@ -15,16 +15,4 @@ public class CategoryContext {
 
         return categories;
     }
-
-    public static ArrayList<Сategory> GetCategory(Integer idGender) {
-        if (idGender == 0) return allCategory();
-
-        ArrayList<Сategory> Categorys = new ArrayList<>();
-
-        for (Сategory category : allCategory()){
-            if (category.id.equals(idGender))
-                Categorys.add(category);
-        }
-        return Categorys;
-    }
 }

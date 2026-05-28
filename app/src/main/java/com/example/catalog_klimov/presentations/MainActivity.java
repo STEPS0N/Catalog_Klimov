@@ -21,14 +21,17 @@ import com.example.catalog_klimov.R;
 import com.example.catalog_klimov.datas.CategoryContext;
 import com.example.catalog_klimov.domains.models.Сategory;
 import com.example.catalog_klimov.presentations.adapters.CategoryAdapter;
+import com.example.catalog_klimov.presentations.adapters.NewsAdapter;
 import com.example.catalog_klimov.presentations.utils.BottomSheetHelper;
 import com.example.catalog_klimov.presentations.utils.ProgressDialogHelper;
 import com.example.network.datas.basket.BasketCreate;
 import com.example.network.datas.basket.BasketUpdate;
 import com.example.network.datas.product.ProductGet;
+import com.example.network.datas.stock.StockGet;
 import com.example.network.domains.callbacks.MyResponseCallback;
 import com.example.network.domains.models.Basket;
 import com.example.network.domains.models.Product;
+import com.example.network.domains.models.Stock;
 import com.example.uicomponents.button.BthCustom;
 import com.example.uicomponents.button.BtnSmall;
 import com.google.gson.GsonBuilder;
@@ -38,13 +41,16 @@ import java.util.ArrayList;
 
 public class MainActivity extends AppCompatActivity {
     RecyclerView llCategory;
+    RecyclerView llNews;
     LinearLayout llProducts;
     EditText etSearch;
     ArrayList<Product> Products = new ArrayList<>();
     ArrayList<Сategory> Categorys = new ArrayList<>();
+    ArrayList<Stock> Stocks = new ArrayList<>();
     ProgressDialogHelper progressDialogHelper;
-    String Token = "148e4252-01c0-4be5-a8fa-fe83d64f8d1d";
+    String Token = "0cda6376-cf42-4632-be9b-4a4c52559a99";
     CategoryAdapter categoryAdapter;
+    NewsAdapter newsAdapter;
     int currentGender = -1;
 
     CategoryAdapter.ionClickInterface CategoryClick = new CategoryAdapter.ionClickInterface() {
@@ -64,6 +70,7 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         llCategory = findViewById(R.id.llCategory);
+        llNews = findViewById(R.id.llNews);
         llProducts = findViewById(R.id.llProducts);
         etSearch = findViewById(R.id.etSearch);
         Categorys = CategoryContext.allCategory();
@@ -79,6 +86,9 @@ public class MainActivity extends AppCompatActivity {
         llCategory.setAdapter(categoryAdapter);
 
         progressDialogHelper = new ProgressDialogHelper(this);
+
+        LoadStocks();
+
         RequestProductGet();
 
         etSearch.addTextChangedListener(new TextWatcher() {
@@ -106,6 +116,31 @@ public class MainActivity extends AppCompatActivity {
         for (Product product : filtered) {
             Fill(product);
         }
+    }
+
+    public void LoadStocks() {
+        progressDialogHelper.progressDialog.show();
+
+        StockGet RequestStockGet = new StockGet(
+                new MyResponseCallback() {
+                    @Override
+                    public void onCompile(String result) {
+                        Log.d("STOCKS GET", result);
+
+                        Stocks = new GsonBuilder().create().fromJson(
+                                result, new TypeToken<ArrayList<Stock>>(){}.getType()
+                        );
+                        newsAdapter = new NewsAdapter(MainActivity.this, Stocks);
+                        llNews.setAdapter(newsAdapter);
+                    }
+
+                    @Override
+                    public void onError(String error) {
+                        Log.e("STOCKS GET", error);
+                    }
+                }
+        );
+        RequestStockGet.execute();
     }
 
     public void RequestProductGet() {
